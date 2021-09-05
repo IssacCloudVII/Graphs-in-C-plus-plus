@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -34,7 +35,7 @@ int insertar_lista_final(Nodo**, Nodo**, Nodo*);
 int borrar_lista(Nodo *, Nodo**, Nodo**);
 int borrar_grafo(Nodo *, Nodo**, Nodo**);
 Nodo* buscar_nodo(string, Nodo*);
-void buscar_total_rutas(Nodo*, vector<string>);
+void buscar_total_rutas(Nodo*, string, string, vector<string>&, vector<string>);
 
 int main()
 {
@@ -94,7 +95,31 @@ int main()
                 else
                     cout << "Grafo eliminado correctamente.\n";
             break;
-
+            case 4:
+            {
+                cout << "Introduce tu nodo origen: ";
+                string nombre_origen;
+                cin >> nombre_origen;
+                cout << "Introduce tu nodo destino: ";
+                string nombre_destino;
+                cin >> nombre_destino;
+                Nodo* nodo_origen = buscar_nodo(nombre_origen, head);
+                Nodo* nodo_destino = buscar_nodo(nombre_destino, head);
+                if(nodo_origen == NULL)
+                {
+                    cout << "No se encontró el nodo origen.\n";
+                    break;
+                }
+                else if(nodo_destino == NULL)
+                {
+                    cout << "No se encontró el nodo destino.\n";
+                    break;
+                }
+                vector<string> visitados;
+                vector<string> ruta;
+                buscar_total_rutas(head, nombre_origen, nombre_destino, visitados, ruta);
+            }
+            break;
             case 0:
                 cout << "Gracias por usar\n";
             break;
@@ -121,10 +146,11 @@ void imprimir_nodo(Nodo nodo)
     {
         while(p != NULL)
         {
-            cout << nodo.Datos.nombre << " -> " << p -> Datos.nombre << "\n";
+            cout << "Nombre del nodo: " << p->Datos.nombre << "\n";
             p = p -> next;
         }
     }
+    cout << "\n";
 
 }
 
@@ -305,8 +331,38 @@ int borrar_grafo(Nodo *p, Nodo** head, Nodo** last)
 
 }
 
-void buscar_total_rutas(Nodo* head, vector<string> visitados)
+void buscar_total_rutas(Nodo* head, string origen, string destino, vector<string> &visitado, vector<string>ruta)
 {
+    visitados.push_back(origen);
+    ruta.push_back(origen);
+    if(origen == destino)
+    {
+        cout << "Ruta: ";
+        for(int i = 0; i < ruta.size(); ++i)
+        {
+            cout << ruta[i] << " ";
+        }
+        cout << "\n";
+    }
+    else
+    {
+        Nodo* p = buscar_nodo(origen, head);
+        Nodo* q = p ->conexiones;
 
+        while(q != NULL)
+        {
+
+            bool esta_visitado = find(visitados.begin(), visitados.end(), q->Datos.nombre) != visitados.end();
+            if(!esta_visitado)
+                buscar_total_rutas(head, q->Datos.nombre, destino, visitados, ruta);
+            q = q -> next;
+        }
+    }
+
+    auto i = find(visitados.begin(), visitados.end(), origen);
+    visitados.erase(i);
+
+
+    return;
 
 }
