@@ -35,7 +35,8 @@ int insertar_lista_final(Nodo**, Nodo**, Nodo*);
 int borrar_lista(Nodo *, Nodo**, Nodo**);
 int borrar_grafo(Nodo *, Nodo**, Nodo**);
 Nodo* buscar_nodo(string, Nodo*);
-void buscar_total_rutas(Nodo*, string, string, vector<string>&, vector<string>);
+void buscar_total_rutas(Nodo*, string, string, vector<string>&, vector<string>, vector<vector<string>>&);
+int obtener_ruta_menor(vector<vector<string>>);
 
 int main()
 {
@@ -43,15 +44,15 @@ int main()
     Nodo* head = NULL;
     Nodo* last = NULL;
 
-
     do
     {
         cout << "Bienvenido al sistema de grafos\n";
-        cout << "Seleccione una opción : \n";
-        cout << "1. Inicializar un grafo a través de un archivo.\n";
+        cout << "Seleccione una opcion : \n";
+        cout << "1. Inicializar un grafo a traves de un archivo.\n";
         cout << "2. Imprimir grafo.\n";
         cout << "3. Borrar grafo.\n";
-        cout << "4. Buscar ruta más corta entre dos puntos.\n";
+        cout << "4. Buscar todas las rutas posibles para llegar de un nodo a otro.\n";
+        cout << "5. Encontrar la ruta mas corta de un nodo a otro.\n";
         cout << "0. Salir.\n";
 
         cin >> opcion;
@@ -61,16 +62,8 @@ int main()
             {
                     if(head != NULL)
                     {
-                        cout << "Esto borrara el grafo actual. ¿Seguro que desea seguir?\n";
-                        cout << "Escribir sí para continuar, no para no borrar el grafo. ";
-
-                        string aux;
-                        cin >> aux;
-                        if(!(aux == "sí" || aux == "si"))
-                        {
-                            cout << "Se escribio no o cualquier otra frase, el grafo no será borrado.\n";
-                            break;
-                        }
+                        cout << "Ya existe un grafo cargado\n";
+                        break;
                     }
                     head = NULL;
                     last = NULL;
@@ -78,7 +71,7 @@ int main()
                     if(x == 1)
                         cout << "Grafo creado exitosamente.\n";
                     else if(x == -1)
-                        cout << "Archivo no encontrado";
+                        cout << "Archivo no encontrado\n";
                     else if(x == -2)
                         cout << "AVISO: El grafo no tenia conexiones\n";
             }
@@ -88,15 +81,20 @@ int main()
                 if(imprimir_grafo(head) == -1)
                     cout << "El grafo aun no se ha introducido o no tiene nada.\n";
             break;
-
             case 3:
                 if(borrar_grafo(head, &head, &last) == -1)
-                    cout << "El grafo está vacío.\n";
+                    cout << "El grafo aun no se ha introducido o no tiene nada.\n";
                 else
-                    cout << "Grafo eliminado correctamente.\n";
+                    cout << "Grafo borrado correctamente.\n";
             break;
             case 4:
+            case 5:
             {
+                if(head == NULL)
+                {
+                    cout << "No se ha introducido ningun grafo.\n";
+                    break;
+                }
                 cout << "Introduce tu nodo origen: ";
                 string nombre_origen;
                 cin >> nombre_origen;
@@ -107,18 +105,53 @@ int main()
                 Nodo* nodo_destino = buscar_nodo(nombre_destino, head);
                 if(nodo_origen == NULL)
                 {
-                    cout << "No se encontró el nodo origen.\n";
+                    cout << "No se encontro el nodo origen.\n";
                     break;
                 }
                 else if(nodo_destino == NULL)
                 {
-                    cout << "No se encontró el nodo destino.\n";
+                    cout << "No se encontro el nodo destino.\n";
                     break;
                 }
                 vector<string> visitados;
                 vector<string> ruta;
-                buscar_total_rutas(head, nombre_origen, nombre_destino, visitados, ruta);
+                vector<vector<string>> rutas;
+                buscar_total_rutas(head, nombre_origen, nombre_destino, visitados, ruta, rutas);
+                if(rutas.size() == 0)
+                {
+                    cout << "No hay rutas disponibles para llegar a ese nodo desde ese destino.\n";
+                    break;
+                }
+                if(opcion == 4)
+                    for(int i = 0; i < rutas.size(); ++i)
+                    {
+                        printf("Ruta %3d: ", i + 1);
+                        for(int j = 0; j < rutas[i].size(); ++j)
+                            if(j != rutas[i].size() - 1)
+                                cout << rutas[i][j] << " -> ";
+                            else
+                                cout << rutas[i][j];
+                        cout << "\n";
+                    }
+                else
+                {
+                    int pos = obtener_ruta_menor(rutas);
+                    cout << "La ruta(s) mas corta(s) encontrada(s) fue(fueron): \n";
+                    for(int i = 0; i < rutas.size(); ++i)
+                        if(rutas[i].size() == pos)
+                        {
+                            for(int j = 0; j < rutas[i].size(); ++j)
+                                if(j != rutas[i].size() - 1)
+                                    cout << rutas[i][j] << " -> ";
+                                else
+                                    cout << rutas[i][j];
+                            cout << "\n";
+                        }
+                }
             }
+            break;
+            default:
+                cout << "Opcion incorrecta\n";
             break;
             case 0:
                 cout << "Gracias por usar\n";
@@ -255,7 +288,6 @@ int inicializar_lista(Nodo** head, Nodo** last)
     string nodo_2;
 
     Nodo *p = *head;
-    Nodo *q = p -> next;
 
     leer_cadena(nodo_1, FILE);
     leer_cadena(nodo_2, FILE);
@@ -266,9 +298,11 @@ int inicializar_lista(Nodo** head, Nodo** last)
     while(!FILE.eof())
     {
         Nodo* aux = buscar_nodo(nodo_1, *head);
-        if(aux == NULL)
+        Nodo* aux_2 = buscar_nodo(nodo_2, *head);
+        if(aux == NULL || aux_2 == NULL)
         {
             cout << "Error en el nombre de las conexiones\n";
+            cout << "Se procedera a cerrar el programa. Revise su archivo.\n";
             exit(0);
         }
         Nodo* aux_nodo = crear_nodo(nodo_2);
@@ -331,19 +365,13 @@ int borrar_grafo(Nodo *p, Nodo** head, Nodo** last)
 
 }
 
-void buscar_total_rutas(Nodo* head, string origen, string destino, vector<string> &visitado, vector<string>ruta)
+void buscar_total_rutas(Nodo* head, string origen, string destino, vector<string> &visitados, vector<string> ruta,
+                        vector<vector<string>>&rutas)
 {
     visitados.push_back(origen);
     ruta.push_back(origen);
     if(origen == destino)
-    {
-        cout << "Ruta: ";
-        for(int i = 0; i < ruta.size(); ++i)
-        {
-            cout << ruta[i] << " ";
-        }
-        cout << "\n";
-    }
+        rutas.push_back(ruta);
     else
     {
         Nodo* p = buscar_nodo(origen, head);
@@ -354,7 +382,7 @@ void buscar_total_rutas(Nodo* head, string origen, string destino, vector<string
 
             bool esta_visitado = find(visitados.begin(), visitados.end(), q->Datos.nombre) != visitados.end();
             if(!esta_visitado)
-                buscar_total_rutas(head, q->Datos.nombre, destino, visitados, ruta);
+                buscar_total_rutas(head, q->Datos.nombre, destino, visitados, ruta, rutas);
             q = q -> next;
         }
     }
@@ -362,7 +390,17 @@ void buscar_total_rutas(Nodo* head, string origen, string destino, vector<string
     auto i = find(visitados.begin(), visitados.end(), origen);
     visitados.erase(i);
 
-
     return;
 
+}
+
+int obtener_ruta_menor(vector<vector<string>> rutas)
+{
+    int menor = rutas[0].size();
+
+    for(int i = 1; i < rutas.size(); ++i)
+        if(menor > rutas[i].size())
+            menor = rutas[i].size();
+
+    return menor;
 }
